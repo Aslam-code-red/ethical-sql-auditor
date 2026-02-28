@@ -1,0 +1,8 @@
+streamlit
+pandas
+fpdf
+google-generativeai
+python-dotenv
+fastapi
+uvicorn
+slowapi
