@@ -1,5 +1,6 @@
 import sqlite3
 import hashlib
+import pandas as pd
 
 # 1. Initialize the Database (Run this once)
 def init_db():
@@ -44,11 +45,8 @@ def check_login(username, password):
     
     conn.close()
     return data[0] if data else None
-import sqlite3
-import pandas as pd
 
-# ... (Keep all your existing login/register code above this) ...
-
+# 4. Sandbox Environment Setup
 def setup_dummy_db():
     """Creates a fake database for the WAF sandbox testing."""
     conn = sqlite3.connect('users.db')
@@ -77,6 +75,7 @@ def setup_dummy_db():
         conn.commit()
     conn.close()
 
+# 5. Safe Query Execution
 def execute_safe_query(query):
     """Executes a query ONLY if the scanner marks it as safe."""
     try:
@@ -90,4 +89,3 @@ def execute_safe_query(query):
 
 # Run initialization immediately when imported
 init_db()
-
