@@ -4,11 +4,16 @@ from pydantic import BaseModel
 from typing import List, Optional
 import google.generativeai as genai
 from scanner import analyze_sql
+import os
+from dotenv import load_dotenv
 
 # Import Rate Limiting tools
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+
+# Load environment variables securely
+load_dotenv()
 
 # --- 1. SECURITY CONFIGURATION (The Vault Door) ---
 API_KEY_NAME = "X-API-Key"
@@ -39,11 +44,16 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- 3. AI THREAT ANALYST CONFIGURATION ---
-# The key goes INSIDE the quotation marks!
-genai.configure(api_key="AIzaSyA71w-LVvQgu8X9Ul4ybNllVpaV67fgmVQ")
+# Safely fetches the key from your hidden environment variables!
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# You need this line to tell Python which AI brain to use!
-ai_model = genai.GenerativeModel('gemini-2.5-flash')
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY not found in environment variables.")
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Use the correct stable model
+ai_model = genai.GenerativeModel('gemini-1.5-flash')
 
 def generate_ai_report(query: str) -> str:
     """Sends the malicious query to Gemini AI for a plain-English explanation."""
@@ -56,7 +66,7 @@ def generate_ai_report(query: str) -> str:
         response = ai_model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        return "AI Analysis unavailable at this time. Please check your API key."
+        return f"AI Analysis Error: {str(e)}"
 
 # --- 4. DATA MODELS ---
 class ScanRequest(BaseModel):
@@ -113,5 +123,5 @@ def scan_sql_payload(request: Request, payload: ScanRequest, api_key: str = Depe
         findings=findings,
         advice=advice,
         fixed_code=fixed_code,
-        ai_analysis=ai_report # Send the AI report back!
+        ai_analysis=ai_report
     )
