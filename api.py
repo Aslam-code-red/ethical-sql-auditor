@@ -53,7 +53,7 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Use the correct stable model
-ai_model = genai.GenerativeModel('gemini-2.5-flash')
+ai_model = genai.GenerativeModel('gemini-pro')
 
 def generate_ai_report(query: str) -> str:
     """Sends the malicious query to Gemini AI for a plain-English explanation."""
@@ -125,4 +125,5 @@ def scan_sql_payload(request: Request, payload: ScanRequest, api_key: str = Depe
         fixed_code=fixed_code,
         ai_analysis=ai_report
     )
+
 
