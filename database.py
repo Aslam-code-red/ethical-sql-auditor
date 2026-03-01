@@ -17,20 +17,20 @@ def init_db():
     conn.close()
 
 # 2. Add a New User (Registration)
-try:
+def create_user(username, password, role="User"):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+    
+    try:
         c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
                   (username, hashed_pw, role))
-        conn.commit() # <--- THIS IS THE MISSING LINE
+        conn.commit()
+        return True
     except sqlite3.IntegrityError:
-        return False
+        return False  # Username already exists
     finally:
         conn.close()
-    return True
-    except sqlite3.IntegrityError:
-        success = False # Username already exists
-        
-    conn.close()
-    return success
 
 # 3. Check Login Credentials
 def check_login(username, password):
@@ -90,3 +90,4 @@ def execute_safe_query(query):
 
 # Run initialization immediately when imported
 init_db()
+
