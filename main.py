@@ -29,8 +29,8 @@ def generate_ai_report(query: str) -> str:
     try:
         response = ai_model.generate_content(prompt)
         return response.text.strip()
-    except Exception:
-        return "AI Analysis unavailable. Check API key."
+    except Exception as e:
+        return f"AI Analysis Error: {str(e)}" # This will print the exact technical error
 
 # --- COMPLIANCE ENGINE: DATA MASKING ---
 def mask_sensitive_data(df):
@@ -272,4 +272,5 @@ def display_results(score, status, findings, advice, fixed_code, query, scan_typ
 if st.session_state['logged_in']: main_app()
 
 else: auth_page()
+
 
