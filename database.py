@@ -17,18 +17,15 @@ def init_db():
     conn.close()
 
 # 2. Add a New User (Registration)
-def create_user(username, password, role="User"):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    
-    # Simple hashing for security (so we don't store plain text)
-    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
-    
-    try:
-        c.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', 
+try:
+        c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
                   (username, hashed_pw, role))
-        conn.commit()
-        success = True
+        conn.commit() # <--- THIS IS THE MISSING LINE
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+    return True
     except sqlite3.IntegrityError:
         success = False # Username already exists
         
