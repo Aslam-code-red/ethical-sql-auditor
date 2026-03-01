@@ -21,7 +21,7 @@ ADMIN_SECRET_KEY = os.getenv("ADMIN_KEY", "admin2024")
 SESSION_TIMEOUT = 300 
 
 # --- AI THREAT ANALYST ---
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 ai_model = genai.GenerativeModel('gemini-pro')
 
 def generate_ai_report(query: str) -> str:
@@ -272,6 +272,7 @@ def display_results(score, status, findings, advice, fixed_code, query, scan_typ
 if st.session_state['logged_in']: main_app()
 
 else: auth_page()
+
 
 
 
