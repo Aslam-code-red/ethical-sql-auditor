@@ -14,7 +14,7 @@ import google.generativeai as genai
 
 # --- INITIALIZE DATABASES & SECURITY ---
 db.init_db()
-# db.setup_dummy_db()  # Keep this commented out so your database doesn't reset!
+db.setup_dummy_db() # Keep this commented out so your database doesn't reset!
 
 load_dotenv()
 ADMIN_SECRET_KEY = os.getenv("ADMIN_KEY", "admin2024")
@@ -272,3 +272,4 @@ def display_results(score, status, findings, advice, fixed_code, query, scan_typ
 if st.session_state['logged_in']: main_app()
 
 else: auth_page()
+
