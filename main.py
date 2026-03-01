@@ -20,14 +20,17 @@ ADMIN_SECRET_KEY = os.getenv("ADMIN_KEY", "admin2024")
 SESSION_TIMEOUT = 300 
 
 # --- AI THREAT ANALYST ---
-genai.configure(api_key="AIzaSyA71w-LVvQgu8X9Ul4ybNllVpaV67fgmVQ")
-ai_model = genai.GenerativeModel('gemini-2.5-flash')
+# --- AI THREAT ANALYST ---
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+ai_model = genai.GenerativeModel('gemini-1.5-flash')
 
 def generate_ai_report(query: str) -> str:
-    prompt = f"Act as a Senior Cybersecurity Database Analyst. I intercepted this malicious SQL injection: {query}\nIn exactly 2 sentences, explain what this attack achieves. Keep it highly technical but easy to read."
-    try: return ai_model.generate_content(prompt).text.strip()
-    except Exception: return "AI Analysis unavailable. Check API key."
-
+    prompt = f"Act as a Senior Cybersecurity Database Analyst. I intercepted this malicious SQL injection: {query}\nIn exactly 2 sentences, explain what this attack achieves."
+    try:
+        response = ai_model.generate_content(prompt)
+        return response.text.strip()
+    except Exception:
+        return "AI Analysis unavailable. Check API key."
 # --- COMPLIANCE ENGINE: DATA MASKING ---
 def mask_sensitive_data(df):
     masked_df = df.copy()
@@ -264,4 +267,5 @@ def display_results(score, status, findings, advice, fixed_code, query, scan_typ
     st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "User": st.session_state['username'], "Risk": score, "Type": scan_type, "Query": query, "lat": lat, "lon": lon})
 
 if st.session_state['logged_in']: main_app()
+
 else: auth_page()
