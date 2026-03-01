@@ -14,11 +14,12 @@ import google.generativeai as genai
 
 # --- INITIALIZE DATABASES & SECURITY ---
 db.init_db()
-# db.setup_dummy_db()load_dotenv()
-ADMIN_SECRET_KEY = os.getenv("ADMIN_KEY", "admin2024") 
+# db.setup_dummy_db()  # Keep this commented out so your database doesn't reset!
+
+load_dotenv()
+ADMIN_SECRET_KEY = os.getenv("ADMIN_KEY", "admin2024")
 SESSION_TIMEOUT = 300 
 
-# --- AI THREAT ANALYST ---
 # --- AI THREAT ANALYST ---
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 ai_model = genai.GenerativeModel('gemini-1.5-flash')
@@ -30,6 +31,7 @@ def generate_ai_report(query: str) -> str:
         return response.text.strip()
     except Exception:
         return "AI Analysis unavailable. Check API key."
+
 # --- COMPLIANCE ENGINE: DATA MASKING ---
 def mask_sensitive_data(df):
     masked_df = df.copy()
@@ -131,8 +133,7 @@ def auth_page():
                     role = "Admin" if ak == ADMIN_SECRET_KEY else "User"
                     if db.create_user(nu, np, role): 
                         st.success(f"UNIT CREATED: {role}. Logging in...")
-                        time.sleep(1) # Small pause for effect
-                        # Auto-login the new user immediately
+                        time.sleep(1)
                         st.session_state.update({'logged_in': True, 'username': nu, 'user_role': role})
                         st.rerun()
                     else: 
@@ -145,8 +146,8 @@ def main_app():
     st.session_state['last_active'] = time.time()
 
     with st.sidebar:
-        st.markdown(f"### 🛡️ {st.session_state['username']}")
-        st.caption(f"Clearance: {st.session_state['user_role']}")
+        st.markdown(f"### 🛡️ {st.session_state.get('username', 'Unknown')}")
+        st.caption(f"Clearance: {st.session_state.get('user_role', 'Unknown')}")
         if st.button(">> TERMINATE SESSION <<", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
 
     st.title("ETHICAL SQL AUDITOR")
@@ -169,13 +170,17 @@ def main_app():
                     
                     if status == "SECURE":
                         st.success("✅ Firewall Passed: Executing Query...")
-                        result_df, error = db.execute_safe_query(q)
-                        if error: st.warning(f"Syntax Error: {error}")
-                        elif result_df is not None and not result_df.empty: 
-                            secure_df = mask_sensitive_data(result_df)
-                            st.success("🔒 Compliance Engine Active: Sensitive data masked.")
-                            st.dataframe(secure_df, use_container_width=True)
-                        else: st.info("Query executed successfully, no data returned.")
+                        # Ensure db.execute_safe_query is defined in database.py
+                        if hasattr(db, 'execute_safe_query'):
+                            result_df, error = db.execute_safe_query(q)
+                            if error: st.warning(f"Syntax Error: {error}")
+                            elif result_df is not None and not result_df.empty: 
+                                secure_df = mask_sensitive_data(result_df)
+                                st.success("🔒 Compliance Engine Active: Sensitive data masked.")
+                                st.dataframe(secure_df, use_container_width=True)
+                            else: st.info("Query executed successfully, no data returned.")
+                        else:
+                            st.info("Query safe, but database execution is disabled.")
                     elif status == "HONEYPOT BREACH":
                         st.error("💀 FIREWALL HARD-LOCK: Honeypot Triggered. Connection Terminated.")
                     else:
@@ -187,7 +192,6 @@ def main_app():
             uploaded_file = st.file_uploader("Select Payload File", type=["sql", "txt"])
             
             if uploaded_file is not None:
-                # FIX: Use .getvalue() to read bytes directly from memory without exhausting the buffer!
                 content = uploaded_file.getvalue().decode("utf-8")
                 
                 if st.button(">> EXECUTE BATCH SCAN <<", use_container_width=True):
@@ -197,12 +201,12 @@ def main_app():
                             score, status, findings, advice, fixed_code = process_query_with_honeypot(query)
                             lat = 13.0827 if score == 0 else random.uniform(-60.0, 60.0) 
                             lon = 80.2707 if score == 0 else random.uniform(-150.0, 150.0)
-                            st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "User": st.session_state['username'], "Risk": score, "Type": "Bulk", "Query": query, "lat": lat, "lon": lon})
+                            st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "User": st.session_state.get('username', 'Unknown'), "Risk": score, "Type": "Bulk", "Query": query, "lat": lat, "lon": lon})
                         st.success(f"Batch Processing Complete! {len(queries)} vectors scanned.")
 
         with scan_tab3:
             st.markdown("### 🎯 Defend The Flag: Training Range")
-            st.code("""# Vulnerable Python Backend\nuser_input = get_user_input()\nquery = f"SELECT * FROM admins WHERE username = 'admin' AND password = '{user_input}'"\ncursor.execute(query)""", language="python")
+            st.code("# Vulnerable Python Backend\nuser_input = get_user_input()\nquery = f\"SELECT * FROM admins WHERE username = 'admin' AND password = '{user_input}'\"\ncursor.execute(query)", language="python")
             ctf_input = st.text_input("Enter your payload (e.g., ' OR 1=1 -- ):")
             
             if st.button(">> LAUNCH CYBER ATTACK <<", use_container_width=True):
@@ -232,7 +236,7 @@ def main_app():
             st.line_chart(df['Risk'].head(15)[::-1], color="#00ff88")
             st.dataframe(df[['Time', 'Risk', 'Type']], use_container_width=True, height=200)
             
-            if st.session_state['user_role'] == "Admin":
+            if st.session_state.get('user_role') == "Admin":
                 st.markdown("##### 📥 Export Reports")
                 dl_col1, dl_col2 = st.columns(2)
                 with dl_col1: st.download_button("💾 Get CSV", data=df.to_csv(index=False).encode('utf-8'), file_name="audit_log.csv", mime="text/csv", use_container_width=True)
@@ -263,10 +267,8 @@ def display_results(score, status, findings, advice, fixed_code, query, scan_typ
         
     lat = 13.0827 if score == 0 else random.uniform(-60.0, 60.0) 
     lon = 80.2707 if score == 0 else random.uniform(-150.0, 150.0)
-    st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "User": st.session_state['username'], "Risk": score, "Type": scan_type, "Query": query, "lat": lat, "lon": lon})
+    st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "User": st.session_state.get('username', 'Unknown'), "Risk": score, "Type": scan_type, "Query": query, "lat": lat, "lon": lon})
 
 if st.session_state['logged_in']: main_app()
 
 else: auth_page()
-
-
